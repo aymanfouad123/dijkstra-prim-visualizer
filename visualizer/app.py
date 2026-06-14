@@ -27,7 +27,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from . import algorithm_bridge as bridge
 from . import frame_renderer
-from .graph_view import GraphView
+from .graph_view import (
+    COLOR_NODE_FRINGE,
+    COLOR_NODE_VISITED,
+    COLOR_SELECTED,
+    COLOR_TREE,
+    GraphView,
+)
 
 Edge = Tuple[str, str, float]
 
@@ -35,9 +41,9 @@ Edge = Tuple[str, str, float]
 class VisualizerApp:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("Graph Algorithm Visualizer - Dijkstra & Prim (Heap vs Linked List)")
-        self.root.geometry("1180x720")
-        self.root.minsize(1040, 640)
+        self.root.title("Graph Algorithm Visualizer - Dijkstra & Prim")
+        self.root.geometry("1240x760")
+        self.root.minsize(1080, 680)
 
         # ---- Model state -------------------------------------------------
         self.vertices: List[str] = []
@@ -51,6 +57,8 @@ class VisualizerApp:
         self._last_run_label: str = ""
 
         # ---- Tk variables ------------------------------------------------
+        default_preset = bridge.GRAPH_PRESETS[0].label
+        self.preset_var = tk.StringVar(value=default_preset)
         self.directed_var = tk.BooleanVar(value=False)
         self.algorithm_var = tk.StringVar(value="Dijkstra")
         self.fringe_var = tk.StringVar(value="Binary Heap")
@@ -60,7 +68,9 @@ class VisualizerApp:
         self.edge_v_var = tk.StringVar(value="")
         self.edge_w_var = tk.StringVar(value="1")
         self.prim_allow_partial_var = tk.BooleanVar(value=False)
-        self.status_var = tk.StringVar(value="Build a graph or load the sample, then run an algorithm.")
+        self.status_var = tk.StringVar(
+            value="Load a preset or build a graph, then run an algorithm."
+        )
 
         self._build_ui()
         self.algorithm_var.trace_add("write", lambda *_: self._on_algorithm_change())
@@ -74,101 +84,152 @@ class VisualizerApp:
         container = ttk.Frame(self.root, padding=8)
         container.pack(fill=tk.BOTH, expand=True)
 
-        controls = ttk.Frame(container)
+        self._build_quick_start(container)
+
+        body = ttk.Frame(container)
+        body.pack(fill=tk.BOTH, expand=True, pady=(8, 0))
+
+        controls = ttk.Frame(body)
         controls.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 8))
 
-        main = ttk.Frame(container)
+        main = ttk.Frame(body)
         main.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
 
         self._build_controls(controls)
         self._build_main(main)
 
+    def _build_quick_start(self, parent: ttk.Frame) -> None:
+        """Top bar: preset, algorithm, fringe, source, run."""
+        bar = ttk.LabelFrame(parent, text="Quick start", padding=8)
+        bar.pack(fill=tk.X)
+
+        ttk.Label(bar, text="Preset:").grid(row=0, column=0, sticky=tk.W, padx=(0, 4))
+        preset_menu = ttk.OptionMenu(bar, self.preset_var, self.preset_var.get())
+        preset_menu.config(width=32)
+        preset_menu.grid(row=0, column=1, sticky=tk.W, padx=(0, 12))
+        self._set_optionmenu(
+            preset_menu,
+            self.preset_var,
+            bridge.PRESET_LABELS,
+        )
+        ttk.Button(bar, text="Load preset", command=self.load_preset).grid(
+            row=0, column=2, sticky=tk.W, padx=(0, 16)
+        )
+
+        ttk.Label(bar, text="Algorithm:").grid(row=0, column=3, sticky=tk.W, padx=(0, 4))
+        for i, name in enumerate(bridge.ALGORITHM_NAMES):
+            ttk.Radiobutton(bar, text=name, value=name, variable=self.algorithm_var).grid(
+                row=0, column=4 + i, sticky=tk.W, padx=(0, 8)
+            )
+
+        ttk.Label(bar, text="Fringe:").grid(row=1, column=0, sticky=tk.W, pady=(6, 0))
+        for i, name in enumerate(bridge.FRINGE_NAMES):
+            ttk.Radiobutton(bar, text=name, value=name, variable=self.fringe_var).grid(
+                row=1, column=1 + i, sticky=tk.W, pady=(6, 0), padx=(0, 8)
+            )
+
+        self.source_label = ttk.Label(bar, text="Source vertex:")
+        self.source_label.grid(row=1, column=3, sticky=tk.W, pady=(6, 0), padx=(8, 4))
+        self.source_menu = ttk.OptionMenu(bar, self.source_var, "")
+        self.source_menu.config(width=6)
+        self.source_menu.grid(row=1, column=4, sticky=tk.W, pady=(6, 0))
+
+        ttk.Button(bar, text="Run", command=self.run_algorithm).grid(
+            row=1, column=5, sticky=tk.EW, padx=(16, 0), pady=(6, 0)
+        )
+
     def _build_controls(self, parent: ttk.Frame) -> None:
-        # --- Graph building ---------------------------------------------
-        graph_box = ttk.LabelFrame(parent, text="1. Build graph", padding=8)
+        # --- Manual graph building --------------------------------------
+        graph_box = ttk.LabelFrame(parent, text="Build your own graph", padding=8)
         graph_box.pack(fill=tk.X, pady=(0, 8))
 
-        ttk.Checkbutton(graph_box, text="Directed (Dijkstra only)",
-                        variable=self.directed_var, command=self._on_directed_change).grid(
-            row=0, column=0, columnspan=3, sticky=tk.W, pady=(0, 6))
+        helper = (
+            "Add vertices first, then choose two vertices and a weight to add an edge."
+        )
+        ttk.Label(graph_box, text=helper, wraplength=240, justify=tk.LEFT).grid(
+            row=0, column=0, columnspan=3, sticky=tk.W, pady=(0, 6)
+        )
 
-        ttk.Label(graph_box, text="Vertex:").grid(row=1, column=0, sticky=tk.W)
+        self.directed_check = ttk.Checkbutton(
+            graph_box,
+            text="Directed (Dijkstra only)",
+            variable=self.directed_var,
+            command=self._on_directed_change,
+        )
+        self.directed_check.grid(row=1, column=0, columnspan=3, sticky=tk.W, pady=(0, 6))
+
+        ttk.Label(graph_box, text="Vertex name:").grid(row=2, column=0, sticky=tk.W)
         ttk.Entry(graph_box, textvariable=self.vertex_name_var, width=10).grid(
-            row=1, column=1, sticky=tk.W, padx=4)
+            row=2, column=1, sticky=tk.W, padx=4
+        )
         ttk.Button(graph_box, text="Add vertex", command=self.add_vertex).grid(
-            row=1, column=2, sticky=tk.W)
+            row=2, column=2, sticky=tk.W
+        )
 
         ttk.Separator(graph_box, orient=tk.HORIZONTAL).grid(
-            row=2, column=0, columnspan=3, sticky=tk.EW, pady=6)
+            row=3, column=0, columnspan=3, sticky=tk.EW, pady=6
+        )
 
-        ttk.Label(graph_box, text="Edge:").grid(row=3, column=0, sticky=tk.W)
+        ttk.Label(graph_box, text="From:").grid(row=4, column=0, sticky=tk.W)
         self.edge_u_menu = ttk.OptionMenu(graph_box, self.edge_u_var, "")
         self.edge_u_menu.config(width=5)
-        self.edge_u_menu.grid(row=3, column=1, sticky=tk.W, padx=4)
+        self.edge_u_menu.grid(row=4, column=1, sticky=tk.W, padx=4)
+
+        ttk.Label(graph_box, text="To:").grid(row=5, column=0, sticky=tk.W, pady=(4, 0))
         self.edge_v_menu = ttk.OptionMenu(graph_box, self.edge_v_var, "")
         self.edge_v_menu.config(width=5)
-        self.edge_v_menu.grid(row=3, column=2, sticky=tk.W)
+        self.edge_v_menu.grid(row=5, column=1, sticky=tk.W, padx=4, pady=(4, 0))
 
-        ttk.Label(graph_box, text="Weight:").grid(row=4, column=0, sticky=tk.W, pady=(4, 0))
+        ttk.Label(graph_box, text="Weight:").grid(row=6, column=0, sticky=tk.W, pady=(4, 0))
         ttk.Entry(graph_box, textvariable=self.edge_w_var, width=10).grid(
-            row=4, column=1, sticky=tk.W, padx=4, pady=(4, 0))
+            row=6, column=1, sticky=tk.W, padx=4, pady=(4, 0)
+        )
         ttk.Button(graph_box, text="Add edge", command=self.add_edge).grid(
-            row=4, column=2, sticky=tk.W, pady=(4, 0))
+            row=6, column=2, sticky=tk.W, pady=(4, 0)
+        )
 
         btns = ttk.Frame(graph_box)
-        btns.grid(row=5, column=0, columnspan=3, sticky=tk.EW, pady=(8, 0))
-        ttk.Button(btns, text="Load sample", command=self.load_sample).pack(side=tk.LEFT)
-        ttk.Button(btns, text="Re-layout", command=self.relayout).pack(side=tk.LEFT, padx=4)
-        ttk.Button(btns, text="Clear", command=self.clear_graph).pack(side=tk.LEFT)
+        btns.grid(row=7, column=0, columnspan=3, sticky=tk.EW, pady=(8, 0))
+        ttk.Button(btns, text="Re-layout", command=self.relayout).pack(side=tk.LEFT)
+        ttk.Button(btns, text="Clear graph", command=self.clear_graph).pack(
+            side=tk.LEFT, padx=4
+        )
 
-        # --- Algorithm configuration ------------------------------------
-        algo_box = ttk.LabelFrame(parent, text="2. Configure algorithm", padding=8)
-        algo_box.pack(fill=tk.X, pady=(0, 8))
+        # --- Edge list ---------------------------------------------------
+        edge_box = ttk.LabelFrame(parent, text="Current edges", padding=4)
+        edge_box.pack(fill=tk.BOTH, expand=True, pady=(0, 8))
+        self.edge_list = tk.Listbox(edge_box, height=8, width=28, font=("Menlo", 10))
+        self.edge_list.pack(fill=tk.BOTH, expand=True)
 
-        ttk.Label(algo_box, text="Algorithm:").grid(row=0, column=0, sticky=tk.W)
-        for i, name in enumerate(bridge.ALGORITHM_NAMES):
-            ttk.Radiobutton(algo_box, text=name, value=name,
-                            variable=self.algorithm_var).grid(row=0, column=1 + i, sticky=tk.W)
-
-        ttk.Label(algo_box, text="Fringe:").grid(row=1, column=0, sticky=tk.W, pady=(4, 0))
-        for i, name in enumerate(bridge.FRINGE_NAMES):
-            ttk.Radiobutton(algo_box, text=name, value=name,
-                            variable=self.fringe_var).grid(row=1, column=1 + i, sticky=tk.W,
-                                                           pady=(4, 0))
-
-        ttk.Label(algo_box, text="Source/Start:").grid(row=2, column=0, sticky=tk.W, pady=(4, 0))
-        self.source_menu = ttk.OptionMenu(algo_box, self.source_var, "")
-        self.source_menu.config(width=6)
-        self.source_menu.grid(row=2, column=1, columnspan=2, sticky=tk.W, pady=(4, 0))
+        # --- Advanced Prim option ----------------------------------------
+        advanced_box = ttk.LabelFrame(parent, text="Advanced", padding=8)
+        advanced_box.pack(fill=tk.X, pady=(0, 8))
 
         self.prim_partial_check = ttk.Checkbutton(
-            algo_box,
-            text="Allow component MST on disconnected graph (Prim only)",
+            advanced_box,
+            text="Allow partial MST for disconnected graph",
             variable=self.prim_allow_partial_var,
         )
-        self.prim_partial_check.grid(row=3, column=0, columnspan=3, sticky=tk.W, pady=(4, 0))
-
-        ttk.Button(algo_box, text="Run algorithm", command=self.run_algorithm).grid(
-            row=4, column=0, columnspan=3, sticky=tk.EW, pady=(8, 0))
+        self.prim_partial_check.pack(anchor=tk.W)
 
         # --- Playback ----------------------------------------------------
-        play_box = ttk.LabelFrame(parent, text="3. Step through iterations", padding=8)
+        play_box = ttk.LabelFrame(parent, text="Step through iterations", padding=8)
         play_box.pack(fill=tk.X, pady=(0, 8))
 
         row = ttk.Frame(play_box)
         row.pack(fill=tk.X)
-        ttk.Button(row, text="|<", width=4, command=self.first_step).pack(side=tk.LEFT)
-        ttk.Button(row, text="<", width=4, command=self.prev_step).pack(side=tk.LEFT, padx=2)
+        ttk.Button(row, text="First", width=6, command=self.first_step).pack(side=tk.LEFT)
+        ttk.Button(row, text="Back", width=6, command=self.prev_step).pack(side=tk.LEFT, padx=2)
         self.play_button = ttk.Button(row, text="Play", width=6, command=self.toggle_play)
         self.play_button.pack(side=tk.LEFT, padx=2)
-        ttk.Button(row, text=">", width=4, command=self.next_step).pack(side=tk.LEFT, padx=2)
-        ttk.Button(row, text=">|", width=4, command=self.last_step).pack(side=tk.LEFT)
+        ttk.Button(row, text="Next", width=6, command=self.next_step).pack(side=tk.LEFT, padx=2)
+        ttk.Button(row, text="Last", width=6, command=self.last_step).pack(side=tk.LEFT)
 
         self.step_label = ttk.Label(play_box, text="Step 0 / 0")
         self.step_label.pack(anchor=tk.W, pady=(6, 0))
 
         # --- Export ------------------------------------------------------
-        export_box = ttk.LabelFrame(parent, text="4. Export animation frames", padding=8)
+        export_box = ttk.LabelFrame(parent, text="Export animation", padding=8)
         export_box.pack(fill=tk.X)
         ttk.Button(export_box, text="Save current frame (PNG)",
                    command=self.save_current_frame).pack(fill=tk.X)
@@ -176,10 +237,20 @@ class VisualizerApp:
                    command=self.export_all_frames).pack(fill=tk.X, pady=(4, 0))
 
     def _build_main(self, parent: ttk.Frame) -> None:
-        self.description_var = tk.StringVar(value="No algorithm has been run yet.")
-        desc = ttk.Label(parent, textvariable=self.description_var, anchor=tk.W,
-                         font=("Helvetica", 12, "bold"), wraplength=820, justify=tk.LEFT)
-        desc.pack(fill=tk.X, pady=(0, 6))
+        self.description_var = tk.StringVar(
+            value="Load a preset or add vertices and edges, then run an algorithm."
+        )
+        desc = ttk.Label(
+            parent,
+            textvariable=self.description_var,
+            anchor=tk.W,
+            font=("Helvetica", 12, "bold"),
+            wraplength=820,
+            justify=tk.LEFT,
+        )
+        desc.pack(fill=tk.X, pady=(0, 4))
+
+        self._build_legend(parent)
 
         self.view = GraphView(parent)
         self.view.pack(fill=tk.BOTH, expand=True)
@@ -187,26 +258,46 @@ class VisualizerApp:
         info = ttk.Frame(parent)
         info.pack(fill=tk.X, pady=(8, 0))
 
-        fringe_frame = ttk.LabelFrame(info, text="Fringe (priority, vertex, parent)", padding=4)
+        fringe_frame = ttk.LabelFrame(info, text="Fringe / priority queue", padding=4)
         fringe_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         self.fringe_list = tk.Listbox(fringe_frame, height=7)
         self.fringe_list.pack(fill=tk.BOTH, expand=True)
 
-        state_frame = ttk.LabelFrame(info, text="State", padding=4)
+        state_frame = ttk.LabelFrame(info, text="Current step", padding=4)
         state_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(8, 0))
-        self.state_text = tk.Text(state_frame, height=7, width=34, state=tk.DISABLED,
-                                  font=("Menlo", 10))
+        self.state_text = tk.Text(
+            state_frame, height=7, width=34, state=tk.DISABLED, font=("Menlo", 10)
+        )
         self.state_text.pack(fill=tk.BOTH, expand=True)
 
-        result_frame = ttk.LabelFrame(info, text="Result / tree", padding=4)
+        result_frame = ttk.LabelFrame(info, text="Final result", padding=4)
         result_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(8, 0))
-        self.result_text = tk.Text(result_frame, height=7, width=34, state=tk.DISABLED,
-                                   font=("Menlo", 10))
+        self.result_text = tk.Text(
+            result_frame, height=7, width=34, state=tk.DISABLED, font=("Menlo", 10)
+        )
         self.result_text.pack(fill=tk.BOTH, expand=True)
 
-        status = ttk.Label(parent, textvariable=self.status_var, anchor=tk.W,
-                           relief=tk.SUNKEN, padding=4)
+        status = ttk.Label(
+            parent, textvariable=self.status_var, anchor=tk.W, relief=tk.SUNKEN, padding=4
+        )
         status.pack(fill=tk.X, pady=(8, 0))
+
+    def _build_legend(self, parent: ttk.Frame) -> None:
+        legend = ttk.Frame(parent)
+        legend.pack(fill=tk.X, pady=(0, 4))
+
+        items = [
+            (COLOR_NODE_VISITED, "Green = visited"),
+            (COLOR_NODE_FRINGE, "Yellow = fringe"),
+            (COLOR_TREE, "Blue = tree edge"),
+            (COLOR_SELECTED, "Red = current edge / vertex"),
+        ]
+        for color, text in items:
+            swatch = tk.Canvas(legend, width=14, height=14, highlightthickness=1,
+                               highlightbackground="#dadce0")
+            swatch.create_rectangle(1, 1, 13, 13, fill=color, outline="")
+            swatch.pack(side=tk.LEFT, padx=(0, 2))
+            ttk.Label(legend, text=text).pack(side=tk.LEFT, padx=(0, 12))
 
     # ====================================================================
     # Graph building actions
@@ -244,17 +335,21 @@ class VisualizerApp:
             messagebox.showerror("Add edge", str(exc))
             return
 
+        directed = self.directed_var.get() and self.algorithm_var.get() == "Dijkstra"
+
         # Update weight if the edge already exists (incremental editing).
         for i, (eu, ev, _) in enumerate(self.edges):
-            if {eu, ev} == {u, v} and not self.directed_var.get():
+            if {eu, ev} == {u, v} and not directed:
                 self.edges[i] = (eu, ev, weight)
                 self._invalidate_run()
+                self._refresh_edge_list()
                 self._render_graph()
                 self._set_status(f"Updated edge {u}-{v} weight to {weight}.")
                 return
-            if (eu, ev) == (u, v) and self.directed_var.get():
+            if (eu, ev) == (u, v) and directed:
                 self.edges[i] = (u, v, weight)
                 self._invalidate_run()
+                self._refresh_edge_list()
                 self._render_graph()
                 self._set_status(f"Updated edge {u}->{v} weight to {weight}.")
                 return
@@ -262,19 +357,34 @@ class VisualizerApp:
         self.edges.append((u, v, weight))
         self._invalidate_run()
         self._refresh_vertex_widgets()
+        self._refresh_edge_list()
         self._render_graph()
-        arrow = "->" if self.directed_var.get() else "-"
+        arrow = "->" if directed else "-"
         self._set_status(f"Added edge {u}{arrow}{v} (weight {weight}).")
 
-    def load_sample(self) -> None:
+    def load_preset(self) -> None:
+        try:
+            preset = bridge.get_preset_by_label(self.preset_var.get())
+            vertices, edges, default_source, description = bridge.load_preset_data(preset.id)
+        except ValueError as exc:
+            messagebox.showerror("Load preset", str(exc))
+            return
+
         self.directed_var.set(False)
-        self.vertices, self.edges = bridge.sample_graph_data()
-        self.source_var.set("A")
+        self.vertices = vertices
+        self.edges = edges
+        self.source_var.set(default_source)
         self._invalidate_run()
         self.view.reset_layout()
         self._refresh_vertex_widgets()
+        self._refresh_edge_list()
         self._render_graph()
-        self._set_status("Loaded built-in sample graph (6 vertices, 9 edges). Expected MST weight = 13.")
+        self._set_status(f"Loaded preset: {preset.label}. {description}")
+
+    def load_sample(self) -> None:
+        """Compatibility alias for the assignment sample preset."""
+        self.preset_var.set(bridge.GRAPH_PRESETS[0].label)
+        self.load_preset()
 
     def relayout(self) -> None:
         self.view.reset_layout()
@@ -287,6 +397,7 @@ class VisualizerApp:
         self._invalidate_run()
         self.view.positions = {}
         self._refresh_vertex_widgets()
+        self._refresh_edge_list()
         self._render_graph()
         self._set_status("Cleared graph.")
 
@@ -344,7 +455,9 @@ class VisualizerApp:
         if not self.steps:
             self.view.draw()
             self.step_label.config(text="Step 0 / 0")
-            self.description_var.set("No algorithm has been run yet.")
+            self.description_var.set(
+                "Load a preset or add vertices and edges, then run an algorithm."
+            )
             return
 
         self.step_index = max(0, min(index, len(self.steps) - 1))
@@ -415,7 +528,8 @@ class VisualizerApp:
             parent = item.get("parent")
             parent_text = parent if parent is not None else "-"
             self.fringe_list.insert(
-                tk.END, f"({item['priority']}, {item['vertex']}, parent={parent_text})")
+                tk.END, f"({item['priority']}, {item['vertex']}, parent={parent_text})"
+            )
 
     def _update_state_panel(self, step: Dict[str, Any]) -> None:
         visited = step.get("visited") or []
@@ -453,8 +567,15 @@ class VisualizerApp:
         ]
         if result.algorithm == "Dijkstra":
             lines.append("Shortest distances:")
+            source = result.source_or_start
+            previous = result.previous or {}
             for v in sorted(result.distances or {}):
-                lines.append(f"   {v}: {self._fmt(result.distances[v])}")
+                dist = self._fmt(result.distances[v])
+                path = bridge.reconstruct_shortest_path(previous, source, v)
+                if path:
+                    lines.append(f"   {v}: {dist}  ({' -> '.join(path)})")
+                else:
+                    lines.append(f"   {v}: {dist}")
             lines.append("Tree edges:")
             for e in result.shortest_path_tree_edges or []:
                 lines.append(f"   {e['from']} -> {e['to']} ({e['weight']})")
@@ -492,7 +613,9 @@ class VisualizerApp:
         if not path:
             return
         img = frame_renderer.render_step(
-            self.view.positions, self.vertices, self.edges,
+            self.view.positions,
+            self.vertices,
+            self.edges,
             self.directed_var.get() and self.algorithm_var.get() == "Dijkstra",
             self.steps[self.step_index],
         )
@@ -509,14 +632,15 @@ class VisualizerApp:
         out_dir = os.path.join(directory, self._safe_label())
         paths = frame_renderer.export_frames(
             out_dir,
-            self.view.positions, self.vertices, self.edges,
+            self.view.positions,
+            self.vertices,
+            self.edges,
             self.directed_var.get() and self.algorithm_var.get() == "Dijkstra",
             self.steps,
             prefix=self._safe_label(),
         )
         self._set_status(f"Exported {len(self.steps)} PNG frames + GIF to {out_dir}")
-        messagebox.showinfo("Export complete",
-                            f"Wrote {len(paths)} files to:\n{out_dir}")
+        messagebox.showinfo("Export complete", f"Wrote {len(paths)} files to:\n{out_dir}")
 
     def _safe_label(self) -> str:
         label = self._last_run_label or "algorithm"
@@ -527,14 +651,24 @@ class VisualizerApp:
     # ====================================================================
     def _on_algorithm_change(self) -> None:
         is_prim = self.algorithm_var.get() == "Prim"
+        is_dijkstra = not is_prim
+
         if is_prim and self.directed_var.get():
             self.directed_var.set(False)
             self._set_status("Prim requires an undirected graph; switched to undirected.")
+
+        self.source_label.config(
+            text="Start vertex:" if is_prim else "Source vertex:"
+        )
+
         if is_prim:
             self.prim_partial_check.state(["!disabled"])
+            self.directed_check.state(["disabled"])
         else:
             self.prim_allow_partial_var.set(False)
             self.prim_partial_check.state(["disabled"])
+            self.directed_check.state(["!disabled"])
+
         self._render_graph()
 
     def _on_directed_change(self) -> None:
@@ -543,6 +677,7 @@ class VisualizerApp:
             messagebox.showinfo("Directed", "Prim requires an undirected graph.")
             return
         self._invalidate_run()
+        self._refresh_edge_list()
         self._render_graph()
 
     def _invalidate_run(self) -> None:
@@ -554,7 +689,7 @@ class VisualizerApp:
         self._update_result_panel()
         self.fringe_list.delete(0, tk.END)
         self._set_text(self.state_text, "")
-        self.description_var.set("Graph changed - run an algorithm to see iterations.")
+        self.description_var.set("Graph changed — run an algorithm to see iterations.")
         self.step_label.config(text="Step 0 / 0")
 
     def _render_graph(self) -> None:
@@ -563,6 +698,17 @@ class VisualizerApp:
         if not self.steps:
             self.view.draw()
 
+    def _refresh_edge_list(self) -> None:
+        self.edge_list.delete(0, tk.END)
+        directed = self.directed_var.get() and self.algorithm_var.get() == "Dijkstra"
+        if not self.edges:
+            self.edge_list.insert(tk.END, "(no edges yet)")
+            return
+        for u, v, w in self.edges:
+            arrow = "->" if directed else "-"
+            label = w if not isinstance(w, float) or not float(w).is_integer() else int(w)
+            self.edge_list.insert(tk.END, f"{u} {arrow} {v}  ({label})")
+
     def _refresh_vertex_widgets(self) -> None:
         options = self.vertices or [""]
         self._set_optionmenu(self.edge_u_menu, self.edge_u_var, options)
@@ -570,6 +716,7 @@ class VisualizerApp:
         self._set_optionmenu(self.source_menu, self.source_var, options)
         if self.source_var.get() not in self.vertices:
             self.source_var.set(self.vertices[0] if self.vertices else "")
+        self._refresh_edge_list()
 
     @staticmethod
     def _set_optionmenu(option_menu: ttk.OptionMenu, var: tk.StringVar, values: List[str]) -> None:
