@@ -1,0 +1,662 @@
+{
+  "algorithm": "Prim",
+  "fringe_type": "Binary Heap",
+  "source_or_start": "A",
+  "vertices": 6,
+  "edges": 9,
+  "runtime_ms": 0.029499991796910763,
+  "distances": null,
+  "previous": null,
+  "shortest_path_tree_edges": null,
+  "mst_edges": [
+    {
+      "from": "A",
+      "to": "C",
+      "weight": 2
+    },
+    {
+      "from": "C",
+      "to": "B",
+      "weight": 1
+    },
+    {
+      "from": "B",
+      "to": "D",
+      "weight": 5
+    },
+    {
+      "from": "D",
+      "to": "E",
+      "weight": 2
+    },
+    {
+      "from": "E",
+      "to": "F",
+      "weight": 3
+    }
+  ],
+  "total_mst_weight": 13,
+  "steps": [
+    {
+      "description": "Initialize Prim's algorithm at start vertex A.",
+      "current_vertex": "A",
+      "selected_edge": null,
+      "visited": [],
+      "fringe": [
+        {
+          "vertex": "A",
+          "priority": 0,
+          "parent": null
+        }
+      ],
+      "tree_edges": []
+    },
+    {
+      "description": "Add vertex A to the MST.",
+      "current_vertex": "A",
+      "selected_edge": null,
+      "visited": [
+        "A"
+      ],
+      "fringe": [],
+      "tree_edges": []
+    },
+    {
+      "description": "Consider candidate edge A-B with weight 4.",
+      "current_vertex": "A",
+      "selected_edge": {
+        "from": "A",
+        "to": "B",
+        "weight": 4
+      },
+      "visited": [
+        "A"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        }
+      ],
+      "tree_edges": []
+    },
+    {
+      "description": "Consider candidate edge A-C with weight 2.",
+      "current_vertex": "A",
+      "selected_edge": {
+        "from": "A",
+        "to": "C",
+        "weight": 2
+      },
+      "visited": [
+        "A"
+      ],
+      "fringe": [
+        {
+          "vertex": "C",
+          "priority": 2,
+          "parent": "A"
+        },
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        }
+      ],
+      "tree_edges": []
+    },
+    {
+      "description": "Add vertex C to the MST using edge A-C with weight 2.",
+      "current_vertex": "C",
+      "selected_edge": {
+        "from": "A",
+        "to": "C",
+        "weight": 2
+      },
+      "visited": [
+        "A",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "description": "Consider candidate edge C-B with weight 1.",
+      "current_vertex": "C",
+      "selected_edge": {
+        "from": "C",
+        "to": "B",
+        "weight": 1
+      },
+      "visited": [
+        "A",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 1,
+          "parent": "C"
+        },
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "description": "Consider candidate edge C-D with weight 8.",
+      "current_vertex": "C",
+      "selected_edge": {
+        "from": "C",
+        "to": "D",
+        "weight": 8
+      },
+      "visited": [
+        "A",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 1,
+          "parent": "C"
+        },
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "description": "Consider candidate edge C-E with weight 10.",
+      "current_vertex": "C",
+      "selected_edge": {
+        "from": "C",
+        "to": "E",
+        "weight": 10
+      },
+      "visited": [
+        "A",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 1,
+          "parent": "C"
+        },
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "description": "Add vertex B to the MST using edge C-B with weight 1.",
+      "current_vertex": "B",
+      "selected_edge": {
+        "from": "C",
+        "to": "B",
+        "weight": 1
+      },
+      "visited": [
+        "A",
+        "B",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "description": "Consider candidate edge B-D with weight 5.",
+      "current_vertex": "B",
+      "selected_edge": {
+        "from": "B",
+        "to": "D",
+        "weight": 5
+      },
+      "visited": [
+        "A",
+        "B",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        },
+        {
+          "vertex": "D",
+          "priority": 5,
+          "parent": "B"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "description": "Add vertex D to the MST using edge B-D with weight 5.",
+      "current_vertex": "D",
+      "selected_edge": {
+        "from": "B",
+        "to": "D",
+        "weight": 5
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fringe": [
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        }
+      ]
+    },
+    {
+      "description": "Consider candidate edge D-E with weight 2.",
+      "current_vertex": "D",
+      "selected_edge": {
+        "from": "D",
+        "to": "E",
+        "weight": 2
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fringe": [
+        {
+          "vertex": "E",
+          "priority": 2,
+          "parent": "D"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        }
+      ]
+    },
+    {
+      "description": "Consider candidate edge D-F with weight 6.",
+      "current_vertex": "D",
+      "selected_edge": {
+        "from": "D",
+        "to": "F",
+        "weight": 6
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fringe": [
+        {
+          "vertex": "E",
+          "priority": 2,
+          "parent": "D"
+        },
+        {
+          "vertex": "F",
+          "priority": 6,
+          "parent": "D"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        }
+      ]
+    },
+    {
+      "description": "Add vertex E to the MST using edge D-E with weight 2.",
+      "current_vertex": "E",
+      "selected_edge": {
+        "from": "D",
+        "to": "E",
+        "weight": 2
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "fringe": [
+        {
+          "vertex": "F",
+          "priority": 6,
+          "parent": "D"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "D",
+          "to": "E",
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "description": "Consider candidate edge E-F with weight 3.",
+      "current_vertex": "E",
+      "selected_edge": {
+        "from": "E",
+        "to": "F",
+        "weight": 3
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "fringe": [
+        {
+          "vertex": "F",
+          "priority": 3,
+          "parent": "E"
+        },
+        {
+          "vertex": "F",
+          "priority": 6,
+          "parent": "D"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "D",
+          "to": "E",
+          "weight": 2
+        }
+      ]
+    },
+    {
+      "description": "Add vertex F to the MST using edge E-F with weight 3.",
+      "current_vertex": "F",
+      "selected_edge": {
+        "from": "E",
+        "to": "F",
+        "weight": 3
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "fringe": [
+        {
+          "vertex": "F",
+          "priority": 6,
+          "parent": "D"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "D",
+          "to": "E",
+          "weight": 2
+        },
+        {
+          "from": "E",
+          "to": "F",
+          "weight": 3
+        }
+      ]
+    }
+  ]
+}

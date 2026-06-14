@@ -1,0 +1,866 @@
+{
+  "algorithm": "Dijkstra",
+  "fringe_type": "Binary Heap",
+  "source_or_start": "A",
+  "vertices": 6,
+  "edges": 9,
+  "runtime_ms": 0.08120801066979766,
+  "distances": {
+    "F": 13,
+    "E": 10,
+    "B": 3,
+    "D": 8,
+    "A": 0,
+    "C": 2
+  },
+  "previous": {
+    "F": "E",
+    "E": "D",
+    "B": "C",
+    "D": "B",
+    "A": null,
+    "C": "A"
+  },
+  "shortest_path_tree_edges": [
+    {
+      "from": "C",
+      "to": "B",
+      "weight": 1
+    },
+    {
+      "from": "A",
+      "to": "C",
+      "weight": 2
+    },
+    {
+      "from": "B",
+      "to": "D",
+      "weight": 5
+    },
+    {
+      "from": "D",
+      "to": "E",
+      "weight": 2
+    },
+    {
+      "from": "E",
+      "to": "F",
+      "weight": 3
+    }
+  ],
+  "mst_edges": null,
+  "total_mst_weight": null,
+  "steps": [
+    {
+      "description": "Initialize source A with distance 0.",
+      "current_vertex": "A",
+      "selected_edge": null,
+      "visited": [],
+      "fringe": [
+        {
+          "vertex": "A",
+          "priority": 0,
+          "parent": null
+        }
+      ],
+      "tree_edges": [],
+      "distances": {
+        "A": 0,
+        "B": "inf",
+        "C": "inf",
+        "D": "inf",
+        "E": "inf",
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Extract-min selects vertex A with shortest known distance 0.",
+      "current_vertex": "A",
+      "selected_edge": null,
+      "visited": [
+        "A"
+      ],
+      "fringe": [],
+      "tree_edges": [],
+      "distances": {
+        "A": 0,
+        "B": "inf",
+        "C": "inf",
+        "D": "inf",
+        "E": "inf",
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Relax edge A->B with weight 4. Update distance of B to 4.",
+      "current_vertex": "A",
+      "selected_edge": {
+        "from": "A",
+        "to": "B",
+        "weight": 4
+      },
+      "visited": [
+        "A"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "B",
+          "weight": 4
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 4,
+        "C": "inf",
+        "D": "inf",
+        "E": "inf",
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Relax edge A->C with weight 2. Update distance of C to 2.",
+      "current_vertex": "A",
+      "selected_edge": {
+        "from": "A",
+        "to": "C",
+        "weight": 2
+      },
+      "visited": [
+        "A"
+      ],
+      "fringe": [
+        {
+          "vertex": "C",
+          "priority": 2,
+          "parent": "A"
+        },
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "B",
+          "weight": 4
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 4,
+        "C": 2,
+        "D": "inf",
+        "E": "inf",
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Extract-min selects vertex C with shortest known distance 2.",
+      "current_vertex": "C",
+      "selected_edge": null,
+      "visited": [
+        "A",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "A",
+          "to": "B",
+          "weight": 4
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 4,
+        "C": 2,
+        "D": "inf",
+        "E": "inf",
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Relax edge C->B with weight 1. Update distance of B to 3.",
+      "current_vertex": "C",
+      "selected_edge": {
+        "from": "C",
+        "to": "B",
+        "weight": 1
+      },
+      "visited": [
+        "A",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 3,
+          "parent": "C"
+        },
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": "inf",
+        "E": "inf",
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Relax edge C->D with weight 8. Update distance of D to 10.",
+      "current_vertex": "C",
+      "selected_edge": {
+        "from": "C",
+        "to": "D",
+        "weight": 8
+      },
+      "visited": [
+        "A",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 3,
+          "parent": "C"
+        },
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        },
+        {
+          "vertex": "D",
+          "priority": 10,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "D",
+          "weight": 8
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 10,
+        "E": "inf",
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Relax edge C->E with weight 10. Update distance of E to 12.",
+      "current_vertex": "C",
+      "selected_edge": {
+        "from": "C",
+        "to": "E",
+        "weight": 10
+      },
+      "visited": [
+        "A",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 3,
+          "parent": "C"
+        },
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        },
+        {
+          "vertex": "D",
+          "priority": 10,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 12,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "D",
+          "weight": 8
+        },
+        {
+          "from": "C",
+          "to": "E",
+          "weight": 10
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 10,
+        "E": 12,
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Extract-min selects vertex B with shortest known distance 3.",
+      "current_vertex": "B",
+      "selected_edge": null,
+      "visited": [
+        "A",
+        "B",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        },
+        {
+          "vertex": "D",
+          "priority": 10,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 12,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "C",
+          "to": "D",
+          "weight": 8
+        },
+        {
+          "from": "C",
+          "to": "E",
+          "weight": 10
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 10,
+        "E": 12,
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Relax edge B->D with weight 5. Update distance of D to 8.",
+      "current_vertex": "B",
+      "selected_edge": {
+        "from": "B",
+        "to": "D",
+        "weight": 5
+      },
+      "visited": [
+        "A",
+        "B",
+        "C"
+      ],
+      "fringe": [
+        {
+          "vertex": "B",
+          "priority": 4,
+          "parent": "A"
+        },
+        {
+          "vertex": "D",
+          "priority": 8,
+          "parent": "B"
+        },
+        {
+          "vertex": "D",
+          "priority": 10,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 12,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "C",
+          "to": "E",
+          "weight": 10
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 8,
+        "E": 12,
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Extract-min selects vertex D with shortest known distance 8.",
+      "current_vertex": "D",
+      "selected_edge": null,
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fringe": [
+        {
+          "vertex": "D",
+          "priority": 10,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 12,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "C",
+          "to": "E",
+          "weight": 10
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 8,
+        "E": 12,
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Relax edge D->E with weight 2. Update distance of E to 10.",
+      "current_vertex": "D",
+      "selected_edge": {
+        "from": "D",
+        "to": "E",
+        "weight": 2
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fringe": [
+        {
+          "vertex": "D",
+          "priority": 10,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "D"
+        },
+        {
+          "vertex": "E",
+          "priority": 12,
+          "parent": "C"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "D",
+          "to": "E",
+          "weight": 2
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 8,
+        "E": 10,
+        "F": "inf"
+      }
+    },
+    {
+      "description": "Relax edge D->F with weight 6. Update distance of F to 14.",
+      "current_vertex": "D",
+      "selected_edge": {
+        "from": "D",
+        "to": "F",
+        "weight": 6
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "fringe": [
+        {
+          "vertex": "D",
+          "priority": 10,
+          "parent": "C"
+        },
+        {
+          "vertex": "E",
+          "priority": 10,
+          "parent": "D"
+        },
+        {
+          "vertex": "E",
+          "priority": 12,
+          "parent": "C"
+        },
+        {
+          "vertex": "F",
+          "priority": 14,
+          "parent": "D"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "D",
+          "to": "E",
+          "weight": 2
+        },
+        {
+          "from": "D",
+          "to": "F",
+          "weight": 6
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 8,
+        "E": 10,
+        "F": 14
+      }
+    },
+    {
+      "description": "Extract-min selects vertex E with shortest known distance 10.",
+      "current_vertex": "E",
+      "selected_edge": null,
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "fringe": [
+        {
+          "vertex": "E",
+          "priority": 12,
+          "parent": "C"
+        },
+        {
+          "vertex": "F",
+          "priority": 14,
+          "parent": "D"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "D",
+          "to": "E",
+          "weight": 2
+        },
+        {
+          "from": "D",
+          "to": "F",
+          "weight": 6
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 8,
+        "E": 10,
+        "F": 14
+      }
+    },
+    {
+      "description": "Relax edge E->F with weight 3. Update distance of F to 13.",
+      "current_vertex": "E",
+      "selected_edge": {
+        "from": "E",
+        "to": "F",
+        "weight": 3
+      },
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "fringe": [
+        {
+          "vertex": "E",
+          "priority": 12,
+          "parent": "C"
+        },
+        {
+          "vertex": "F",
+          "priority": 13,
+          "parent": "E"
+        },
+        {
+          "vertex": "F",
+          "priority": 14,
+          "parent": "D"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "D",
+          "to": "E",
+          "weight": 2
+        },
+        {
+          "from": "E",
+          "to": "F",
+          "weight": 3
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 8,
+        "E": 10,
+        "F": 13
+      }
+    },
+    {
+      "description": "Extract-min selects vertex F with shortest known distance 13.",
+      "current_vertex": "F",
+      "selected_edge": null,
+      "visited": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "fringe": [
+        {
+          "vertex": "F",
+          "priority": 14,
+          "parent": "D"
+        }
+      ],
+      "tree_edges": [
+        {
+          "from": "C",
+          "to": "B",
+          "weight": 1
+        },
+        {
+          "from": "A",
+          "to": "C",
+          "weight": 2
+        },
+        {
+          "from": "B",
+          "to": "D",
+          "weight": 5
+        },
+        {
+          "from": "D",
+          "to": "E",
+          "weight": 2
+        },
+        {
+          "from": "E",
+          "to": "F",
+          "weight": 3
+        }
+      ],
+      "distances": {
+        "A": 0,
+        "B": 3,
+        "C": 2,
+        "D": 8,
+        "E": 10,
+        "F": 13
+      }
+    }
+  ]
+}
