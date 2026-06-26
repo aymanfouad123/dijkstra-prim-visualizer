@@ -70,9 +70,9 @@ python graph_algorithms_project.py --mode export-steps --steps-dir sample_steps
 
 ## Interactive Visualizer (Tkinter UI)
 
-A Tkinter user interface lives in the `visualizer/` folder. It reuses the exact
-same algorithm functions from `graph_algorithms_project.py` (no logic is
-duplicated) and satisfies the assignment's UI and animation requirements.
+A minimal Tkinter user interface lives in the `visualizer/` folder. It reuses
+the algorithm functions from `dijkstra.py` and `prim.py` and keeps the flow
+linear so each step unlocks only after the previous one has enough state.
 
 Run it from the project root:
 
@@ -82,23 +82,16 @@ python -m visualizer
 
 ### What the UI does
 
-1. **Build a graph** — add vertices, add weighted edges (with a directed toggle
-   for Dijkstra), load the built-in sample graph, re-layout, or clear. Edges can
-   be added incrementally and existing edge weights are updated in place. Nodes
-   can be dragged to reposition them.
-2. **Configure the algorithm** — choose Dijkstra or Prim, choose the Binary Heap
-   or Linked List fringe, and pick the source/start vertex.
-3. **Run** — validation errors (negative weights, missing source, Prim on a
-   disconnected/directed graph) are reported in a dialog.
-4. **Step through iterations** — first / previous / next / last and an auto Play
-   button walk through every recorded major step. The canvas highlights visited
-   vertices (green), the current vertex (red outline), fringe vertices (yellow),
-   the current tree/MST edges (blue), and the edge being relaxed/considered (red).
-5. **Read the state** — panels show the fringe contents, visited set, per-step
-   distances (Dijkstra) or running MST weight (Prim), the final result, and the
-   measured runtime.
-6. **Export animation frames** — save the current frame as a PNG, or export every
-   step as numbered PNG frames plus an animated GIF for the report.
+1. **Choose an algorithm** — select Dijkstra or Prim.
+2. **Create graph input** — load a matching preset or build a graph manually by
+   adding vertices and weighted edges. Dijkstra supports a directed-edge toggle.
+3. **Configure and run** — select Binary Heap or Linked List, choose the
+   source/start vertex, and run. Prim also has an `Allow disconnected Prim`
+   toggle that passes `allow_partial=True` to the backend.
+4. **Step through iterations** — seek to beginning, back, next, and seek to end.
+   The canvas highlights visited vertices, fringe vertices, current vertex,
+   selected edge, and the current shortest-path tree or MST.
+5. **Read the state** — panels show the current step details and final result.
 
 ### Visualizer file layout
 
@@ -106,14 +99,10 @@ python -m visualizer
 visualizer/
   __init__.py          # package marker
   __main__.py          # enables: python -m visualizer
-  algorithm_bridge.py  # connects the UI to graph_algorithms_project
+  algorithm_bridge.py  # connects the UI to dijkstra.py and prim.py
   graph_view.py        # Tk canvas: draws nodes/edges and highlights state
-  frame_renderer.py    # Pillow renderer for PNG frames + GIF export
-  app.py               # main application window, controls, playback, export
+  app.py               # main staged application window, controls, playback
 ```
-
-The PNG/GIF export uses Pillow (`pip install pillow`). The core algorithms and
-all CLI modes still require only the Python standard library.
 
 ## Algorithm Restrictions
 
@@ -135,4 +124,3 @@ all CLI modes still require only the Python standard library.
 - `sample_demo_output.txt`: sample graph output and expected results
 - `benchmark_results.csv`: runtime data for charts/tables
 - `sample_steps/*.json`: major iteration traces for animation/screenshot support
-
