@@ -1,2 +1,1 @@
-"""Minimal Tkinter visualizer for Dijkstra and Prim."""
-
+"""PySide6 visualizer for Dijkstra and Prim."""

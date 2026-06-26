@@ -1,4 +1,4 @@
-"""Adapter layer between the Tkinter UI and the algorithm modules."""
+"""Adapter layer between the visualizer UI and the algorithm modules."""
 
 from __future__ import annotations
 

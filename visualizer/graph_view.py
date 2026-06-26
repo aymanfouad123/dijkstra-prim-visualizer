@@ -1,10 +1,13 @@
-"""Canvas renderer for graph state and algorithm steps."""
+"""QGraphicsView renderer for graph state and algorithm steps."""
 
 from __future__ import annotations
 
 import math
-import tkinter as tk
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
+
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPolygonF
+from PySide6.QtWidgets import QFrame, QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView
 
 from . import algorithm_bridge as bridge
 
@@ -13,11 +16,11 @@ Edge = Tuple[str, str, float]
 NODE_RADIUS = 22
 MIN_WIDTH = 680
 MIN_HEIGHT = 420
+RESIZE_DEBOUNCE_MS = 150
 
 EDGE_COLOR = "#8a949e"
 TREE_COLOR = "#2563eb"
 SELECTED_COLOR = "#dc2626"
-PENDING_COLOR = "#7c3aed"
 VISITED_COLOR = "#16a34a"
 FRINGE_COLOR = "#facc15"
 NODE_COLOR = "#ffffff"
@@ -28,67 +31,64 @@ def _edge_key(u: str, v: str, directed: bool):
     return (u, v) if directed else frozenset((u, v))
 
 
-class GraphView(tk.Canvas):
-    def __init__(self, parent, **kwargs) -> None:
-        super().__init__(
-            parent,
-            bg="#ffffff",
-            highlightthickness=1,
-            highlightbackground="#d1d5db",
-            **kwargs,
-        )
+class GraphView(QGraphicsView):
+    """Visualization-only canvas. Graph editing is done through form controls."""
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self.setScene(QGraphicsScene(self))
+        self.setRenderHint(QPainter.RenderHint.Antialiasing)
+        self.setBackgroundBrush(QBrush(QColor("#ffffff")))
+        self.setFrameShape(QFrame.Shape.Box)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.setDragMode(QGraphicsView.DragMode.NoDrag)
+        self.setInteractive(False)
+
         self.vertices: List[str] = []
         self.edges: List[Edge] = []
         self.directed = False
         self.positions: Dict[str, Tuple[float, float]] = {}
         self._last: Dict[str, Any] = {}
-        self._dragging: Optional[str] = None
-        self._press_at: Optional[Tuple[float, float]] = None
         self._layout_size: Optional[Tuple[int, int]] = None
-        self._redraw_pending = False
-        self.manual_enabled = False
-        self.pending_vertex: Optional[str] = None
-        self.on_blank_double_click: Optional[Callable[[float, float], None]] = None
-        self.on_vertex_click: Optional[Callable[[str], None]] = None
-        self.bind("<Configure>", self._on_configure)
-        self.bind("<Button-1>", self._on_press)
-        self.bind("<B1-Motion>", self._on_drag)
-        self.bind("<ButtonRelease-1>", self._on_release)
-        self.bind("<Double-Button-1>", self._on_double_click)
+        self._layout_frozen = False
+        self._resize_timer = QTimer(self)
+        self._resize_timer.setSingleShot(True)
+        self._resize_timer.timeout.connect(self._apply_resize)
+        self._pending_resize: Optional[Tuple[int, int]] = None
 
     def set_graph(self, vertices: List[str], edges: List[Edge], directed: bool) -> None:
         self.vertices = list(vertices)
         self.edges = list(edges)
         self.directed = directed
         self.positions = {v: p for v, p in self.positions.items() if v in self.vertices}
-        self._ensure_layout()
+        if not self._layout_frozen:
+            self._ensure_layout()
 
     def reset_layout(self) -> None:
+        if self._layout_frozen:
+            return
         self.positions = {}
         self._layout_size = None
         self._ensure_layout()
         self.draw(**self._last)
+
+    def freeze_layout(self) -> None:
+        """Lock vertex positions after a successful algorithm run."""
+        self._layout_frozen = True
+
+    def unfreeze_layout(self) -> None:
+        """Allow layout updates again when returning to editing mode."""
+        self._layout_frozen = False
 
     def clear(self) -> None:
         self.vertices = []
         self.edges = []
         self.positions = {}
         self._last = {}
-        self._dragging = None
-        self._press_at = None
         self._layout_size = None
-        self.pending_vertex = None
-        self.delete("all")
-
-    def set_manual_mode(self, enabled: bool) -> None:
-        self.manual_enabled = enabled
-        if not enabled:
-            self.pending_vertex = None
-        self.draw(**self._last)
-
-    def set_pending_vertex(self, vertex: Optional[str]) -> None:
-        self.pending_vertex = vertex if vertex in self.vertices else None
-        self.draw(**self._last)
+        self._layout_frozen = False
+        self.scene().clear()
 
     def draw(
         self,
@@ -99,10 +99,6 @@ class GraphView(tk.Canvas):
         selected_edge: Optional[Dict[str, Any]] = None,
         distances: Optional[Dict[str, Any]] = None,
     ) -> None:
-        # Record the latest desired state and coalesce repeated calls into a
-        # single render on the next idle cycle. Without this, fast event
-        # streams (drag motion, window resize) trigger one full canvas rebuild
-        # per event and starve the event loop, which makes clicks feel dropped.
         self._last = {
             "visited": visited,
             "current": current,
@@ -111,27 +107,35 @@ class GraphView(tk.Canvas):
             "selected_edge": selected_edge,
             "distances": distances,
         }
-        self._schedule_redraw()
+        self._render(**self._last)
 
     def draw_now(self) -> None:
         """Force a synchronous render of the most recent state."""
-        self._redraw_pending = False
         self._render(**self._last)
 
-    def _schedule_redraw(self) -> None:
-        if self._redraw_pending:
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        if self._layout_frozen:
             return
-        self._redraw_pending = True
-        self.after_idle(self._flush_redraw)
+        self._pending_resize = (max(self.viewport().width(), 1), max(self.viewport().height(), 1))
+        self._resize_timer.start(RESIZE_DEBOUNCE_MS)
 
-    def _flush_redraw(self) -> None:
-        if not self._redraw_pending:
+    def _apply_resize(self) -> None:
+        if self._layout_frozen:
             return
-        self._redraw_pending = False
-        try:
-            self._render(**self._last)
-        except tk.TclError:
-            pass
+        new_size = self._pending_resize
+        if new_size is None:
+            return
+        old_size = self._layout_size
+        if self.positions and old_size and old_size[0] > 1 and old_size[1] > 1:
+            sx = new_size[0] / old_size[0]
+            sy = new_size[1] / old_size[1]
+            self.positions = {
+                vertex: (x * sx, y * sy)
+                for vertex, (x, y) in self.positions.items()
+            }
+        self._layout_size = new_size
+        self.draw(**self._last)
 
     def _render(
         self,
@@ -142,8 +146,14 @@ class GraphView(tk.Canvas):
         selected_edge: Optional[Dict[str, Any]] = None,
         distances: Optional[Dict[str, Any]] = None,
     ) -> None:
-        self._ensure_layout()
-        self.delete("all")
+        if not self._layout_frozen:
+            self._ensure_layout()
+
+        scene = self.scene()
+        scene.clear()
+
+        width, height = self._canvas_size()
+        scene.setSceneRect(0, 0, width, height)
 
         visited_set = set(visited or [])
         fringe_vertices = {item.get("vertex") for item in (fringe or [])}
@@ -157,12 +167,12 @@ class GraphView(tk.Canvas):
         )
 
         for u, v, weight in self.edges:
-            self._draw_edge(u, v, weight, tree_keys, selected_key)
+            self._draw_edge(scene, u, v, weight, tree_keys, selected_key)
         for vertex in self.vertices:
-            self._draw_vertex(vertex, visited_set, fringe_vertices, current, distances)
+            self._draw_vertex(scene, vertex, visited_set, fringe_vertices, current, distances)
 
     def _canvas_size(self) -> Tuple[int, int]:
-        return max(self.winfo_width(), MIN_WIDTH), max(self.winfo_height(), MIN_HEIGHT)
+        return max(self.viewport().width(), MIN_WIDTH), max(self.viewport().height(), MIN_HEIGHT)
 
     def _ensure_layout(self) -> None:
         missing = [v for v in self.vertices if v not in self.positions]
@@ -184,20 +194,7 @@ class GraphView(tk.Canvas):
                 cy + radius * math.sin(angle),
             )
 
-    def _on_configure(self, event) -> None:
-        new_size = (max(event.width, 1), max(event.height, 1))
-        old_size = self._layout_size
-        if self.positions and old_size and old_size[0] > 1 and old_size[1] > 1:
-            sx = new_size[0] / old_size[0]
-            sy = new_size[1] / old_size[1]
-            self.positions = {
-                vertex: (x * sx, y * sy)
-                for vertex, (x, y) in self.positions.items()
-            }
-        self._layout_size = new_size
-        self.draw(**self._last)
-
-    def _draw_edge(self, u: str, v: str, weight: float, tree_keys: Set, selected_key) -> None:
+    def _draw_edge(self, scene, u: str, v: str, weight: float, tree_keys: Set, selected_key) -> None:
         if u not in self.positions or v not in self.positions:
             return
 
@@ -205,35 +202,56 @@ class GraphView(tk.Canvas):
         x2, y2 = self.positions[v]
         key = _edge_key(u, v, self.directed)
         color = EDGE_COLOR
-        width = 2
+        line_width = 2
         if key in tree_keys:
             color = TREE_COLOR
-            width = 4
+            line_width = 4
         if selected_key == key:
             color = SELECTED_COLOR
-            width = 4
+            line_width = 4
 
         sx, sy, ex, ey = self._trim(x1, y1, x2, y2)
-        arrow = tk.LAST if self.directed else tk.NONE
-        self.create_line(
-            sx,
-            sy,
-            ex,
-            ey,
-            fill=color,
-            width=width,
-            arrow=arrow,
-            arrowshape=(14, 16, 6),
-        )
+        pen = QPen(QColor(color), line_width)
+        line = QGraphicsLineItem(sx, sy, ex, ey)
+        line.setPen(pen)
+        scene.addItem(line)
+
+        if self.directed:
+            angle = math.atan2(ey - sy, ex - sx)
+            arrow_len = 14
+            ax = ex - arrow_len * math.cos(angle - 0.4)
+            ay = ey - arrow_len * math.sin(angle - 0.4)
+            bx = ex - arrow_len * math.cos(angle + 0.4)
+            by = ey - arrow_len * math.sin(angle + 0.4)
+            arrow = QGraphicsPolygonItem(QPolygonF([(ex, ey), (ax, ay), (bx, by)]))
+            arrow.setPen(QPen(Qt.PenStyle.NoPen))
+            arrow.setBrush(QBrush(QColor(color)))
+            scene.addItem(arrow)
 
         mx, my = (x1 + x2) / 2, (y1 + y2) / 2
         label = bridge.format_weight(weight)
+        font = QFont("Helvetica", 10, QFont.Weight.Bold)
+        text = QGraphicsSimpleTextItem(label)
+        text.setFont(font)
+        text.setBrush(QBrush(QColor(TEXT_COLOR)))
+        text_rect = text.boundingRect()
         pad_x = max(14, len(label) * 4 + 8)
-        self.create_rectangle(mx - pad_x, my - 10, mx + pad_x, my + 10, fill="#ffffff", outline="")
-        self.create_text(mx, my, text=label, fill=TEXT_COLOR, font=("Helvetica", 10, "bold"))
+        pad_y = 10
+        bg = QGraphicsRectItem(
+            mx - pad_x,
+            my - text_rect.height() / 2 - 4,
+            pad_x * 2,
+            text_rect.height() + 8,
+        )
+        bg.setPen(QPen(Qt.PenStyle.NoPen))
+        bg.setBrush(QBrush(QColor("#ffffff")))
+        scene.addItem(bg)
+        text.setPos(mx - text_rect.width() / 2, my - text_rect.height() / 2)
+        scene.addItem(text)
 
     def _draw_vertex(
         self,
+        scene,
         vertex: str,
         visited: Set[str],
         fringe_vertices: Set[str],
@@ -250,29 +268,34 @@ class GraphView(tk.Canvas):
             fill = FRINGE_COLOR
 
         outline = SELECTED_COLOR if vertex == current else "#4b5563"
-        width = 4 if vertex == current else 2
-        if vertex == self.pending_vertex:
-            outline = PENDING_COLOR
-            width = 4
+        outline_width = 4 if vertex == current else 2
 
-        self.create_oval(
+        ellipse = QGraphicsEllipseItem(
             x - NODE_RADIUS,
             y - NODE_RADIUS,
-            x + NODE_RADIUS,
-            y + NODE_RADIUS,
-            fill=fill,
-            outline=outline,
-            width=width,
+            NODE_RADIUS * 2,
+            NODE_RADIUS * 2,
         )
-        self.create_text(x, y, text=vertex, fill=text_color, font=("Helvetica", 12, "bold"))
+        ellipse.setPen(QPen(QColor(outline), outline_width))
+        ellipse.setBrush(QBrush(QColor(fill)))
+        scene.addItem(ellipse)
+
+        font = QFont("Helvetica", 12, QFont.Weight.Bold)
+        label = QGraphicsSimpleTextItem(vertex)
+        label.setFont(font)
+        label.setBrush(QBrush(QColor(text_color)))
+        label_rect = label.boundingRect()
+        label.setPos(x - label_rect.width() / 2, y - label_rect.height() / 2)
+        scene.addItem(label)
+
         if distances is not None and vertex in distances:
-            self.create_text(
-                x,
-                y + NODE_RADIUS + 12,
-                text=f"d={bridge.format_distance(distances[vertex])}",
-                fill=TEXT_COLOR,
-                font=("Helvetica", 10),
-            )
+            dfont = QFont("Helvetica", 10)
+            dlabel = QGraphicsSimpleTextItem(f"d={bridge.format_distance(distances[vertex])}")
+            dlabel.setFont(dfont)
+            dlabel.setBrush(QBrush(QColor(TEXT_COLOR)))
+            drect = dlabel.boundingRect()
+            dlabel.setPos(x - drect.width() / 2, y + NODE_RADIUS + 4)
+            scene.addItem(dlabel)
 
     @staticmethod
     def _trim(x1: float, y1: float, x2: float, y2: float) -> Tuple[float, float, float, float]:
@@ -285,34 +308,3 @@ class GraphView(tk.Canvas):
             x2 - ux * NODE_RADIUS,
             y2 - uy * NODE_RADIUS,
         )
-
-    def _hit(self, x: float, y: float) -> Optional[str]:
-        for vertex, (vx, vy) in self.positions.items():
-            if math.hypot(x - vx, y - vy) <= NODE_RADIUS:
-                return vertex
-        return None
-
-    def _on_press(self, event) -> None:
-        self._dragging = self._hit(event.x, event.y)
-        self._press_at = (event.x, event.y)
-
-    def _on_drag(self, event) -> None:
-        if self._dragging:
-            self.positions[self._dragging] = (event.x, event.y)
-            self.draw(**self._last)
-
-    def _on_release(self, event) -> None:
-        clicked_vertex = self._dragging
-        was_click = True
-        if self._press_at is not None:
-            was_click = math.hypot(event.x - self._press_at[0], event.y - self._press_at[1]) < 5
-        if self.manual_enabled and was_click and clicked_vertex and self.on_vertex_click:
-            self.on_vertex_click(clicked_vertex)
-        self._dragging = None
-        self._press_at = None
-
-    def _on_double_click(self, event) -> None:
-        if not self.manual_enabled or self._hit(event.x, event.y):
-            return
-        if self.on_blank_double_click:
-            self.on_blank_double_click(event.x, event.y)
