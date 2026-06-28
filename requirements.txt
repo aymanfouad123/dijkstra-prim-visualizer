@@ -1,0 +1,6 @@
+# Interactive visualizer (required)
+PySide6>=6.5.0
+Pillow>=10.0.0
+
+# Benchmark charts (optional — benchmark_runner.py still runs without it)
+matplotlib>=3.8.0
