@@ -7,7 +7,6 @@ on-screen visualizer.
 from __future__ import annotations
 
 import math
-import os
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
@@ -149,28 +148,6 @@ def render_step(
             draw.text((x - dw // 2, y + r + 4), dlabel, fill=TEXT_COLOR, font=dfont)
 
     return img
-
-
-def export_frames(
-    steps: List[Dict[str, Any]],
-    vertices: List[str],
-    edges: List[Edge],
-    directed: bool,
-    positions: Dict[str, Tuple[float, float]],
-    output_dir: str,
-    prefix: str = "step",
-    width: int = MIN_WIDTH,
-    height: int = MIN_HEIGHT,
-) -> List[str]:
-    """Write one PNG per step. Returns list of written file paths."""
-    os.makedirs(output_dir, exist_ok=True)
-    paths: List[str] = []
-    for i, step in enumerate(steps):
-        img = render_step(vertices, edges, directed, positions, step, width, height)
-        path = os.path.join(output_dir, f"{prefix}_{i:03d}.png")
-        img.save(path, "PNG")
-        paths.append(path)
-    return paths
 
 
 def export_gif(

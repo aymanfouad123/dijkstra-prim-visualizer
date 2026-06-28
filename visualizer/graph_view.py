@@ -174,6 +174,15 @@ class GraphView(QGraphicsView):
     def _canvas_size(self) -> Tuple[int, int]:
         return max(self.viewport().width(), MIN_WIDTH), max(self.viewport().height(), MIN_HEIGHT)
 
+    def export_canvas_size(self) -> Tuple[int, int]:
+        """Canvas dimensions matching frozen layout coordinates for frame export."""
+        if self._layout_size:
+            return (
+                max(self._layout_size[0], MIN_WIDTH),
+                max(self._layout_size[1], MIN_HEIGHT),
+            )
+        return self._canvas_size()
+
     def _ensure_layout(self) -> None:
         missing = [v for v in self.vertices if v not in self.positions]
         if not missing:

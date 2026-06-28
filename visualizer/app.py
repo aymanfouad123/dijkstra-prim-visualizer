@@ -252,9 +252,6 @@ class App(QMainWindow):
 
         step5 = QGroupBox("5. Export / Reset")
         step5_layout = QVBoxLayout(step5)
-        self.export_png_button = QPushButton("Export PNG frames")
-        self.export_png_button.clicked.connect(self.export_png_frames)
-        step5_layout.addWidget(self.export_png_button)
         self.export_gif_button = QPushButton("Export GIF")
         self.export_gif_button.clicked.connect(self.export_gif)
         step5_layout.addWidget(self.export_gif_button)
@@ -591,44 +588,16 @@ class App(QMainWindow):
             f"{self.algorithm} finished with {len(self.steps)} recorded steps. Use step controls to review."
         )
 
-    def export_png_frames(self) -> None:
-        if self.mode != "viewing_results" or not self.steps:
-            self.status_text = "Run an algorithm first, then export frames."
-            return
-
-        output_dir = QFileDialog.getExistingDirectory(self, "Choose output directory for PNG frames")
-        if not output_dir:
-            return
-
-        prefix = f"{self.algorithm.lower()}_{self.fringe.replace(' ', '_').lower()}"
-
-        try:
-            directed = self.directed and self.algorithm == "Dijkstra"
-            paths = frame_renderer.export_frames(
-                steps=self.steps,
-                vertices=self.vertices,
-                edges=self.edges,
-                directed=directed,
-                positions=dict(self.view.positions),
-                output_dir=output_dir,
-                prefix=prefix,
-            )
-        except Exception as exc:
-            QMessageBox.critical(self, "Export", f"Export failed: {exc}")
-            self.status_text = f"Export failed: {exc}"
-            return
-
-        self.status_text = f"Exported {len(paths)} PNG frame(s) to {output_dir}."
-
     def export_gif(self) -> None:
         if self.mode != "viewing_results" or not self.steps:
             self.status_text = "Run an algorithm first, then export frames."
             return
 
+        prefix = f"{self.algorithm.lower()}_{self.fringe.replace(' ', '_').lower()}"
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Save GIF animation",
-            f"{self.algorithm.lower()}_{self.fringe.replace(' ', '_').lower()}.gif",
+            f"{prefix}.gif",
             "GIF files (*.gif)",
         )
         if not path:
@@ -636,6 +605,7 @@ class App(QMainWindow):
 
         try:
             directed = self.directed and self.algorithm == "Dijkstra"
+            width, height = self.view.export_canvas_size()
             frame_renderer.export_gif(
                 steps=self.steps,
                 vertices=self.vertices,
@@ -643,6 +613,8 @@ class App(QMainWindow):
                 directed=directed,
                 positions=dict(self.view.positions),
                 output_path=path,
+                width=width,
+                height=height,
             )
         except Exception as exc:
             QMessageBox.critical(self, "Export", f"GIF export failed: {exc}")
@@ -929,7 +901,6 @@ class App(QMainWindow):
 
         playback_enabled = viewing and idle and has_steps
         self._configure_widgets(self.playback_widgets, playback_enabled)
-        self.export_png_button.setEnabled(playback_enabled)
         self.export_gif_button.setEnabled(playback_enabled)
         self.reset_button.setEnabled(viewing and idle)
 
