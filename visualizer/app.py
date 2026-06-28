@@ -740,7 +740,7 @@ class App(QMainWindow):
         self.directed_check.setChecked(self.directed)
         self.directed_check.blockSignals(False)
         self.start = start if start in self.vertices else (self.vertices[0] if self.vertices else "")
-        self._invalidate_run(sync=False)
+        self._invalidate_run(sync=False, redraw=False)
         self._refresh_graph(reset_layout=reset_layout)
 
     def _refresh_graph(self, reset_layout: bool = False) -> None:
@@ -793,7 +793,7 @@ class App(QMainWindow):
         directed = "directed" if self.directed and self.algorithm == "Dijkstra" else "undirected"
         self.graph_summary_label.setText(f"{source}. V={len(self.vertices)} E={len(self.edges)} {directed}.")
 
-    def _invalidate_run(self, sync: bool = True) -> None:
+    def _invalidate_run(self, sync: bool = True, redraw: bool = True) -> None:
         if self.mode == "viewing_results":
             self.mode = "editing"
             self.view.unfreeze_layout()
@@ -801,7 +801,7 @@ class App(QMainWindow):
         self.steps = []
         self.step_index = 0
         self.step_label.setText("Step 0 / 0")
-        if hasattr(self, "view"):
+        if redraw and hasattr(self, "view"):
             self.view.draw()
         if hasattr(self, "result_text"):
             self._write(self.result_text, "")

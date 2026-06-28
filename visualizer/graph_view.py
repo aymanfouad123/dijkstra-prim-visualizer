@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QPointF, Qt, QTimer
 from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPen, QPolygonF
 from PySide6.QtWidgets import QFrame, QGraphicsEllipseItem, QGraphicsLineItem, QGraphicsPolygonItem, QGraphicsRectItem, QGraphicsScene, QGraphicsSimpleTextItem, QGraphicsView
 
@@ -232,7 +232,9 @@ class GraphView(QGraphicsView):
             ay = ey - arrow_len * math.sin(angle - 0.4)
             bx = ex - arrow_len * math.cos(angle + 0.4)
             by = ey - arrow_len * math.sin(angle + 0.4)
-            arrow = QGraphicsPolygonItem(QPolygonF([(ex, ey), (ax, ay), (bx, by)]))
+            arrow = QGraphicsPolygonItem(
+                QPolygonF([QPointF(ex, ey), QPointF(ax, ay), QPointF(bx, by)])
+            )
             arrow.setPen(QPen(Qt.PenStyle.NoPen))
             arrow.setBrush(QBrush(QColor(color)))
             scene.addItem(arrow)
